@@ -31,7 +31,12 @@ NOTE: THIS is adaption for WLS example to track optical photon produced in the s
 		totalencherenkov: total energy of cherenkov photon
  
 
-
+To download and compile
+1. git clone https://github.com/cvson/WLSROOT.git
+2. mkdir WLSRoot-build
+3. cd WLSRoot-build
+4. cmake -DGeant4_DIR=/your-installed-geant4-directory /path-to-WLSRoot-Directory
+5. make
 
                                    WLS
                                 ----------
