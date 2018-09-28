@@ -23,8 +23,8 @@ NOTE: THIS is adaption for WLS example to track optical photon produced in the s
 		zpos: z position of primary track
 		pz: momentum in in z direction of primary track
 		theta: angle of primary track to the z-axis
-		nphotonpass2end: number of photons reach to sensitive detector
-		nphotonfail2end: number of photons fail to reach sensitive detector
+		nphotonpass2end: number of photons reach to the end of fiber
+		nphotonfail2end: number of photons escape from the side of fiber
 		nphotonscintillation: number of scintillation photon produced when charge particle pass through scintillator
 		nphotoncherenkov: number of cherenkov photon produced when charge particle pass through 
 		totalenscintillation: total energy of scintillation photon
