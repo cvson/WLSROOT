@@ -37,6 +37,8 @@ To download and compile
 3. cd WLSRoot-build
 4. cmake -DGeant4_DIR=/your-installed-geant4-directory /path-to-WLSRoot-Directory
 5. make
+Note:
+on Mac, you might need to: unset DYLD_LIBRARY_PATH
 
                                    WLS
                                 ----------

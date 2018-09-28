@@ -10,10 +10,10 @@
 #
 #/WLS/phys/verbose 1
 #
-/gps/particle e-
+/gps/particle mu-
 
 /gps/ene/type Mono
-/gps/ene/mono 500 MeV
+/gps/ene/mono 1 GeV
 #
 /gps/pos/type Plane
 /gps/pos/shape Circle
