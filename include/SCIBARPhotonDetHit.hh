@@ -59,7 +59,7 @@ class SCIBARPhotonDetHit : public G4VHit
   public:
 
     SCIBARPhotonDetHit();
-    SCIBARPhotonDetHit(G4ThreeVector pExit, G4ThreeVector pArrive, G4double pTime);
+    SCIBARPhotonDetHit(G4ThreeVector pExit, G4ThreeVector pArrive, G4double pTime, G4double pEnergyDeposit);
     virtual ~SCIBARPhotonDetHit();
 
     SCIBARPhotonDetHit(const SCIBARPhotonDetHit &right);
@@ -78,6 +78,8 @@ class SCIBARPhotonDetHit : public G4VHit
 
     inline void SetArrivalTime(G4double t) { fArrivalTime = t; }
     inline G4double GetArrivalTime() { return fArrivalTime; }
+    
+    G4double GetEnergyDeposit() {return fenergyDeposit;};
  
   private:
 
@@ -87,6 +89,8 @@ class SCIBARPhotonDetHit : public G4VHit
     G4ThreeVector fPosArrive;
     // where the photon exited the fiber (world's coordinate)
     G4ThreeVector fPosExit;
+    
+    G4double fenergyDeposit;
 
 };
 

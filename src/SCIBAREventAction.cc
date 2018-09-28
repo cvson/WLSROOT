@@ -30,9 +30,9 @@
 //
 //
 #include "SCIBAREventAction.hh"
-
+#include "SCIBARStackingAction.hh"
 #include "SCIBARRunAction.hh"
-
+#include "SCIBARHistoManager.hh"
 #include "SCIBAREventActionMessenger.hh"
 
 #include "SCIBARPhotonDetHit.hh"
@@ -50,14 +50,18 @@
 //          in the PhotonDet detector
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-SCIBAREventAction::SCIBAREventAction(SCIBARRunAction* runaction)
- : fRunAction(runaction), fVerboseLevel(0)
+SCIBAREventAction::SCIBAREventAction(SCIBARRunAction* runaction, SCIBARHistoManager* histo)
+:G4UserEventAction(),
+fRunAction(runaction),fHistoManager(histo),fVerboseLevel(0),fMPPCCollID(0),
+ fEnergyDep(0.),fTrackLDep(0.), fEnergyDepHit(0.),
+fprix(0.), fpriy(0.), fpriz(0.), fpripz(0.), fpritheta(0.),
+fnphotonpass2end(0), fnphotonfail2end(0),
+fnphotonscint(0), fnphotonscheren(0), fenscint(0.0), fencheren(0.0)
 {
-  fMPPCCollID = 0;
+ //fMPPCCollID = 0;
+ fEventMessenger = new SCIBAREventActionMessenger(this); }
 
-  fEventMessenger = new SCIBAREventActionMessenger(this);
-}
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -74,8 +78,15 @@ void SCIBAREventAction::BeginOfEventAction(const G4Event* evt)
 
  if(fVerboseLevel>0)
     G4cout << "<<< Event  " << evtNb << " started." << G4endl;
+ // initialisation per event
+ fEnergyDep = 0.;//newadd
+ fTrackLDep = 0.;//newadd
+    //remember to reset
+    fnphotonpass2end = 0;
+    fnphotonfail2end = 0;
+    fnphotonscint = 0;
+    fnphotonscheren = 0;
 }
-
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #include "G4Threading.hh"
@@ -108,12 +119,48 @@ void SCIBAREventAction::EndOfEventAction(const G4Event* evt)
   }
 
   // Get hit information about photons that reached the detector in this event
+    G4int n_hit;
   if (mppcHC)
   {
 	//newadd
-	G4int n_hit = mppcHC->entries();
+    n_hit = mppcHC->entries();
 	G4cout << "<<< Event  " << evt->GetEventID() << " having hit."<<n_hit << G4endl;
   }
+  else n_hit = 0;
+    //get number of photon electron?
+    G4int n_photondet;
+    
+    if (n_hit==0) {
+        n_photondet=0;
+    } else {
+    for(int l=0; l<n_hit; l++){
+        //to count number of photon?
+        //n_photondet = n_hit;//TODO
+        SCIBARPhotonDetHit* hitth = (*mppcHC)[l];
+        fEnergyDepHit += hitth->GetEnergyDeposit();//newadd3
+    }//end for l
+    }//end else n_hit
+	//NEW ADD
+	  //accumulates statistic
+  //
+  fRunAction->fillPerEvent(fEnergyDep, fTrackLDep);
+  
+  //fill histograms
+  //
+  fHistoManager->FillHisto(0, fEnergyDep);
+  fHistoManager->FillHisto(1, fTrackLDep);
+  fHistoManager->FillHisto(2, fEnergyDep*1.0/fTrackLDep);
+    fHistoManager->FillHisto(3, n_hit);
+    //this class is not work? why?
+    //move this to StackAction class
+    /*SCIBARStackingAction * pfstachaction = new SCIBARStackingAction();
+    G4int n_opticalphoton = pfstachaction->GetNumberofOpticalPhoton();
+    fHistoManager->FillHisto(4, n_opticalphoton);*/
+    fHistoManager->FillHisto(5, fEnergyDepHit);//newadd3
+  //fill ntuple
+  //
+  fHistoManager->FillNtuple(fEnergyDep, fTrackLDep);
+ fHistoManager->FillPrimTrack(fprix, fpriy, fpriz, fpripz, fpritheta,fnphotonpass2end,fnphotonfail2end,fnphotonscint,fnphotonscheren,fenscint,fencheren);//newadd
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

@@ -40,6 +40,7 @@
 #include "G4UserRunAction.hh"
 
 class G4Run;
+class SCIBARHistoManager;//newadd
 
 class SCIBARRunActionMessenger;
 
@@ -47,7 +48,8 @@ class SCIBARRunAction : public G4UserRunAction
 {
   public:
 
-    SCIBARRunAction();
+    //SCIBARRunAction();
+    SCIBARRunAction(SCIBARHistoManager*);//newadd
     virtual ~SCIBARRunAction();
 
   public:
@@ -57,13 +59,15 @@ class SCIBARRunAction : public G4UserRunAction
 
     void  SetRndmFreq(G4int val) { fSaveRndm = val; }
     G4int GetRndmFreq()          { return fSaveRndm; }
-
+    void fillPerEvent(G4double, G4double);//newadd
     inline void SetAutoSeed (const G4bool val) { fAutoSeed = val; }
 
   private:
  
     SCIBARRunActionMessenger* fRunMessenger;
-
+    SCIBARHistoManager* fHistoManager;//newadd
+    G4double fSumEDep, fSum2EDep;//newadd
+    G4double fSumLDep, fSum2LDep;//newadd
     G4int fSaveRndm;
     G4bool fAutoSeed;
 

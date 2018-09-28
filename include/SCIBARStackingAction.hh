@@ -37,13 +37,15 @@
 
 #include "globals.hh"
 #include "G4UserStackingAction.hh"
+#include "SCIBARHistoManager.hh"
 
 class SCIBARStackingAction : public G4UserStackingAction
 {
   public:
 
-    SCIBARStackingAction();
+    SCIBARStackingAction(SCIBARHistoManager*);
     virtual ~SCIBARStackingAction();
+    G4int GetNumberofOpticalPhoton(){return fPhotonCounter;};
 
   public:
 
@@ -52,7 +54,7 @@ class SCIBARStackingAction : public G4UserStackingAction
     virtual void PrepareNewEvent();
 
   private:
-
+    SCIBARHistoManager* fHistoManager;
     G4int fPhotonCounter;
 
 };

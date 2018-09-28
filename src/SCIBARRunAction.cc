@@ -30,10 +30,12 @@
 //
 //
 #include "SCIBARRunAction.hh"
+#include "SCIBARHistoManager.hh"//newadd
 #include "SCIBARRunActionMessenger.hh"
 
 #include "G4Run.hh"
 #include "G4RunManager.hh"
+#include "G4UnitsTable.hh" //newadd
 
 #include "Randomize.hh"
 
@@ -44,11 +46,20 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-SCIBARRunAction::SCIBARRunAction()
+/*SCIBARRunAction::SCIBARRunAction()
   : fSaveRndm(0), fAutoSeed(false)
 {
   fRunMessenger = new SCIBARRunActionMessenger(this);
+}*/
+SCIBARRunAction::SCIBARRunAction(SCIBARHistoManager* histo)
+: G4UserRunAction(),
+  fHistoManager(histo),
+  fSumEDep(0.), fSum2EDep(0.),
+  fSumLDep(0.), fSum2LDep(0.), fSaveRndm(1), fAutoSeed(false)
+{
+fRunMessenger = new SCIBARRunActionMessenger(this);
 }
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -82,16 +93,70 @@ void SCIBARRunAction::BeginOfRunAction(const G4Run* aRun)
   }
 
   if (fSaveRndm > 0) G4Random::saveEngineStatus("BeginOfRun.rndm");
+//newadd
+ //
+  fSumEDep = fSum2EDep = 0.;
+  fSumLDep = fSum2LDep = 0.;
+  
+  //histograms
+  //
+  fHistoManager->Book();
+}
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+void SCIBARRunAction::fillPerEvent(G4double EDep,G4double LDep)
+{ 
+  //accumulate statistic
+  //
+  fSumEDep += EDep;  fSum2EDep += EDep*EDep;
+  
+  fSumLDep += LDep;  fSum2LDep += LDep*LDep;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void SCIBARRunAction::EndOfRunAction(const G4Run* )
+void SCIBARRunAction::EndOfRunAction(const G4Run* aRun )
 {
   if (fSaveRndm == 1)
   {
      G4Random::showEngineStatus();
      G4Random::saveEngineStatus("endOfRun.rndm");
+//newadd
+ G4int NbOfEvents = aRun->GetNumberOfEvent();
+  if (NbOfEvents == 0) return;
+  
+  //compute statistics: mean and rms
+  //
+  fSumEDep /= NbOfEvents; fSum2EDep /= NbOfEvents;
+  G4double rmsEDep = fSum2EDep - fSumEDep*fSumEDep;
+  if (rmsEDep >0.) rmsEDep = std::sqrt(rmsEDep); else rmsEDep = 0.;
+  
+
+  
+  fSumLDep /= NbOfEvents; fSum2LDep /= NbOfEvents;
+  G4double rmsLDep = fSum2LDep - fSumLDep*fSumLDep;
+  if (rmsLDep >0.) rmsLDep = std::sqrt(rmsLDep); else rmsLDep = 0.;
+  
+ 
+  
+  //print
+  //
+  G4cout
+     << "\n--------------------End of Run------------------------------\n"
+     << "\n mean Energy in scintillator : " << G4BestUnit(fSumEDep,"Energy")
+     << " +- "                          << G4BestUnit(rmsEDep,"Energy")
+     << G4endl;
+     
+  G4cout
+     << "\n mean trackLength in scintillator : " << G4BestUnit(fSumLDep,"Length")
+     << " +- "                               << G4BestUnit(rmsLDep,"Length")  
+     << "\n------------------------------------------------------------\n"
+     << G4endl;
+     
+  //save histograms
+  //
+  fHistoManager->PrintStatistic();
+  fHistoManager->Save();   
   }
+
 }

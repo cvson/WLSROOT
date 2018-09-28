@@ -39,31 +39,54 @@
 #include "G4UserEventAction.hh"
 
 class SCIBARRunAction;
+class SCIBARHistoManager;//newadd
 class SCIBAREventActionMessenger;
 
 class SCIBAREventAction : public G4UserEventAction
 {
   public:
 
-    SCIBAREventAction(SCIBARRunAction*);
+    //SCIBAREventAction(SCIBARRunAction*);
+    SCIBAREventAction(SCIBARRunAction*, SCIBARHistoManager*);
     virtual ~SCIBAREventAction();
 
   public:
 
     virtual void   BeginOfEventAction(const G4Event*);
     virtual void     EndOfEventAction(const G4Event*);
-
+    void AddDep(G4double de, G4double dl) {fEnergyDep += de; fTrackLDep += dl;};//newadd
+    void AddNoPhotonType(G4int nphotonscint, G4int nphotoncheren) {fnphotonscint += nphotonscint; fnphotonscheren += nphotoncheren;};//newadd6
+    void AddPhotonEnergy(G4double enscint, G4double encheren){fenscint +=enscint; fencheren +=encheren;};
+    void AddNoPhotonPass2end(G4int nphotonpass) {fnphotonpass2end += nphotonpass;};//newadd6
+    void AddNoPhotonFail2end(G4int nphotonfail) {fnphotonfail2end += nphotonfail;};//newadd6
+    void AddPriTrackx(G4double xval){fprix = xval;};
+    void AddPriTracky(G4double yval){fpriy = yval;};
+    void AddPriTrackz(G4double zval){fpriz = zval;};
+    void AddPriTrackpz(G4double pzval){fpripz = pzval;};
+    void AddPriTracktheta(G4double thetaval){fpritheta = thetaval;};
+    //void AddPriTrackNophotonpass2end(G4int nphoton2passval){fnphotonpass2end = nphoton2passval;};//newadd2
+    //void AddPriTrackNophotonfail2end(G4int nphoton2failval){fnphotonfail2end = nphoton2failval;};//newadd2
+    //void AddPriTrackNophotonScint(G4int nphotonscintval){fnphotonscint = nphotonscintval;};//newadd5
+    //void AddPriTrackNophotonCheren(G4int nphotoncherenval){fnphotonscheren = nphotoncherenval;};//newadd5
     G4int GetEventNo();
     void SetEventVerbose(G4int);
 
   private:
 
     SCIBARRunAction* fRunAction;
+    SCIBARHistoManager* fHistoManager;//newadd
     SCIBAREventActionMessenger* fEventMessenger;
 
     G4int fVerboseLevel;
  
     G4int fMPPCCollID;
+	 G4double  fEnergyDep;//newadd
+   G4double  fTrackLDep;//newadd
+    G4double  fEnergyDepHit;//newadd3
+    G4double fprix, fpriy, fpriz, fpripz, fpritheta;//newadd
+    G4int fnphotonpass2end, fnphotonfail2end;//newadd2
+    G4int fnphotonscint, fnphotonscheren;
+    G4double fenscint, fencheren;
 };
 
 #endif

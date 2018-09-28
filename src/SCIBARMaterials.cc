@@ -292,9 +292,9 @@ void SCIBARMaterials::CreateMaterials()
   mptSCIBARfiber->
            AddProperty("RINDEX",photonEnergy,refractiveIndexSCIBARfiber,nEntries);
   // mptSCIBARfiber->AddProperty("ABSLENGTH",photonEnergy,absSCIBARfiber,nEntries);
-  mptSCIBARfiber->AddProperty("SCIBARABSLENGTH",photonEnergy,absSCIBARfiber,nEntries);
-  mptSCIBARfiber->AddProperty("SCIBARCOMPONENT",photonEnergy,emissionFib,nEntries);
-  mptSCIBARfiber->AddConstProperty("SCIBARTIMECONSTANT", 0.5*ns);
+  mptSCIBARfiber->AddProperty("WLSABSLENGTH",photonEnergy,absSCIBARfiber,nEntries);
+  mptSCIBARfiber->AddProperty("WLSCOMPONENT",photonEnergy,emissionFib,nEntries);
+  mptSCIBARfiber->AddConstProperty("WLSTIMECONSTANT", 0.5*ns);
 
   fPMMA->SetMaterialPropertiesTable(mptSCIBARfiber);
 
@@ -373,21 +373,32 @@ void SCIBARMaterials::CreateMaterials()
   //--------------------------------------------------
 
   G4double refractiveIndexPS[] =
-  { 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50,
+  /*{ 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50,
     1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50,
     1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50,
     1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50,
-    1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50};
-
+    1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50, 1.50};*/
+    { 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58,
+        1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58,
+        1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58,
+        1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58,
+        1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58};
+    
   assert(sizeof(refractiveIndexPS) == sizeof(photonEnergy));
 
   G4double absPS[] =
-  {2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,
+  /*{2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,
    2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,
    2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,
    2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,
-   2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm};
+   2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm,2.*cm};*/
 
+    {250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,
+        250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,
+        250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,
+        250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,
+        250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm,250.*cm};
+    
   assert(sizeof(absPS) == sizeof(photonEnergy));
 
   G4double scintilFast[] =
@@ -407,7 +418,8 @@ void SCIBARMaterials::CreateMaterials()
                AddProperty("FASTCOMPONENT",photonEnergy, scintilFast,nEntries);
   mptPolystyrene->AddConstProperty("SCINTILLATIONYIELD",10./keV);
   mptPolystyrene->AddConstProperty("RESOLUTIONSCALE",1.0);
-  mptPolystyrene->AddConstProperty("FASTTIMECONSTANT", 10.*ns);
+  //mptPolystyrene->AddConstProperty("FASTTIMECONSTANT", 10.*ns);
+    mptPolystyrene->AddConstProperty("FASTTIMECONSTANT", 2.4*ns);
  
   fPolystyrene->SetMaterialPropertiesTable(mptPolystyrene);
 

@@ -23,68 +23,50 @@
 // * acceptance of all terms of the Geant4 Software license.          *
 // ********************************************************************
 //
-// $Id: SCIBARPhotonDetHit.cc 70825 2013-06-06 08:29:26Z gcosmo $
-//
-/// \file optical/wls/src/SCIBARPhotonDetHit.cc
-/// \brief Implementation of the SCIBARPhotonDetHit class
+/// \file analysis/AnaEx01/include/SCIBARHistoManager.hh
+/// \brief Definition of the SCIBARHistoManager class
 //
 //
-#include "SCIBARPhotonDetHit.hh"
+// $Id: SCIBARHistoManager.hh 92318 2015-08-27 14:49:47Z gcosmo $
+// 
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo...... 
 
-G4ThreadLocal G4Allocator<SCIBARPhotonDetHit>* SCIBARPhotonDetHitAllocator=0;
+#ifndef SCIBARHistoManager_h
+#define SCIBARHistoManager_h 1
+
+#include "globals.hh"
+
+#include "g4root.hh"
+//#include "g4csv.hh"
+//#include "g4xml.hh"
+//#include "g4hbook.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-SCIBARPhotonDetHit::SCIBARPhotonDetHit()
+class SCIBARHistoManager
 {
-  fArrivalTime = 0.;
-  fPosArrive   = G4ThreeVector(0., 0., 0.);
-  fPosExit     = G4ThreeVector(0., 0., 0.);
-    fenergyDeposit = 0.;//newadd3
-}
+  public:
+    SCIBARHistoManager();
+   ~SCIBARHistoManager();
+
+    void Book();
+    void Save();
+    
+    void FillHisto(G4int id, G4double e, G4double weight = 1.0);
+    void Normalize(G4int id, G4double fac);    
+
+    /*void FillNtuple(G4double EnergyAbs, G4double EnergyGap,
+                    G4double TrackLAbs, G4double TrackLGap);*/
+    void FillNtuple(G4double EnergyDep, G4double TrackLDep);
+    void FillPrimTrack(G4double x, G4double y, G4double z, G4double pz, G4double theta, G4int nphotopass, G4int nphotofail, G4int nphotoscint, G4int nphotocheren, G4double enscint, G4double encheren);
+    void PrintStatistic();        
+    
+  private:
+    G4bool fFactoryOn;    
+};
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-SCIBARPhotonDetHit::SCIBARPhotonDetHit(G4ThreeVector pExit,
-                                 G4ThreeVector pArrive,
-                                 G4double pTime, G4double pEnergyDeposit)
-{
-  fPosExit     = pExit;
-  fPosArrive   = pArrive;
-  fArrivalTime = pTime;
-    fenergyDeposit = pEnergyDeposit;//newadd3
-}
+#endif
 
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-SCIBARPhotonDetHit::~SCIBARPhotonDetHit() { }
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-SCIBARPhotonDetHit::SCIBARPhotonDetHit(const SCIBARPhotonDetHit &right)
-  : G4VHit()
-{
-  *this = right;
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-const SCIBARPhotonDetHit& SCIBARPhotonDetHit::operator=(const SCIBARPhotonDetHit &right)
-{
-  fPosExit     = right.fPosExit;
-  fPosArrive   = right.fPosArrive;
-  fArrivalTime = right.fArrivalTime;
-    fenergyDeposit = right.fenergyDeposit;//newadd3
-
-  return *this;
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-G4int SCIBARPhotonDetHit::operator==(const SCIBARPhotonDetHit& right) const
-{
-  return fPosExit     == right.fPosExit    &&
-         fPosArrive   == right.fPosArrive  &&
-         fArrivalTime == right.fArrivalTime &&
-        fenergyDeposit == right.fenergyDeposit;//newadd3
-}

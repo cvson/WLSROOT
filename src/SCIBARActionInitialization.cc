@@ -30,7 +30,7 @@
 
 #include "SCIBARActionInitialization.hh"
 #include "SCIBARDetectorConstruction.hh"
-
+#include "SCIBARHistoManager.hh"//newadd
 #include "SCIBARPrimaryGeneratorAction.hh"
 
 #include "SCIBARRunAction.hh"
@@ -58,23 +58,32 @@ SCIBARActionInitialization::~SCIBARActionInitialization()
 
 void SCIBARActionInitialization::BuildForMaster() const
 {
-  SetUserAction(new SCIBARRunAction());
+  // Histo manager
+  SCIBARHistoManager*  histo = new SCIBARHistoManager();//newadd
+  //SetUserAction(new SCIBARRunAction());
+   SetUserAction(new SCIBARRunAction(histo));//newadd
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void SCIBARActionInitialization::Build() const
 {
+   // Histo manager
+  SCIBARHistoManager*  histo = new SCIBARHistoManager();//newadd
   SetUserAction(new SCIBARPrimaryGeneratorAction(fDetector));
 
-  SCIBARRunAction* runAction = new SCIBARRunAction();
-  SCIBAREventAction* eventAction = new SCIBAREventAction(runAction);
+  //SCIBARRunAction* runAction = new SCIBARRunAction();
+  //SCIBAREventAction* eventAction = new SCIBAREventAction(runAction);
+ SCIBARRunAction* runAction = new SCIBARRunAction(histo);
+ SCIBAREventAction* eventAction = new SCIBAREventAction(runAction,histo);
 
   SetUserAction(runAction);
   SetUserAction(eventAction);
   SetUserAction(new SCIBARTrackingAction());
-  SetUserAction(new SCIBARSteppingAction(fDetector));
-  SetUserAction(new SCIBARStackingAction());
+  //SetUserAction(new SCIBARSteppingAction(fDetector));
+  SetUserAction(new SCIBARSteppingAction(fDetector,eventAction));//newadd
+ // SetUserAction(new SCIBARStackingAction());
+    SetUserAction(new SCIBARStackingAction(histo));
 }  
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

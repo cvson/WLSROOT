@@ -38,6 +38,7 @@
 #include "G4UserSteppingAction.hh"
 
 class SCIBARDetectorConstruction;
+class SCIBAREventAction;//newadd
 class SCIBARSteppingActionMessenger;
 
 class G4Track;
@@ -49,7 +50,8 @@ class SCIBARSteppingAction : public G4UserSteppingAction
 {
   public:
 
-    SCIBARSteppingAction(SCIBARDetectorConstruction*);
+    //SCIBARSteppingAction(SCIBARDetectorConstruction*);
+    SCIBARSteppingAction(SCIBARDetectorConstruction*, SCIBAREventAction*);
     virtual ~SCIBARSteppingAction();
 
     virtual void UserSteppingAction(const G4Step*);
@@ -61,6 +63,11 @@ class SCIBARSteppingAction : public G4UserSteppingAction
     G4int GetNumberOfClad1Bounces();
     G4int GetNumberOfClad2Bounces();
     G4int GetNumberOfSCIBARBounces();
+    //unless you need to store for each step
+    G4int GetNumberOfPhotonsPass2end(){return fCounterEnd;};//newadd2
+    G4int GetNumberOfPhotonsFail2end(){return fCounterMid;};//newadd2
+    G4int GetNumberOfPhotonsScintillation(){return fScintillationCounter;};
+    G4int GetNumberOfPhotonsCherenkov(){return fCerenkovCounter;};
     // return number of successful events and reset the counter
     G4int ResetSuccessCounter();
  
@@ -80,6 +87,9 @@ class SCIBARSteppingAction : public G4UserSteppingAction
     G4int fCounterClad1Bounce;
     // number of bounces that a photon been through from Cladding 2 to World
     G4int fCounterClad2Bounce;
+    
+    G4int fScintillationCounter;//newadd4
+    G4int fCerenkovCounter;//newadd4
 
     // initial gamma of the photon
     G4double fInitGamma;
@@ -92,6 +102,7 @@ class SCIBARSteppingAction : public G4UserSteppingAction
     static G4int fMaxRndmSave;
  
     SCIBARDetectorConstruction* fDetector;
+    SCIBAREventAction* fEventAction;//newadd
 
     SCIBARSteppingActionMessenger* fSteppingMessenger;
 
@@ -99,6 +110,7 @@ class SCIBARSteppingAction : public G4UserSteppingAction
     { 
       fCounterBounce = fCounterSCIBARBounce =
       fCounterClad1Bounce = fCounterClad2Bounce = 0;
+        fScintillationCounter = fCerenkovCounter = 0;//newadd4
       fInitGamma = fInitTheta = -1;
     }
 

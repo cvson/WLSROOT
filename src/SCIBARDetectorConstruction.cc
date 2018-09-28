@@ -71,9 +71,9 @@ SCIBARDetectorConstruction::SCIBARDetectorConstruction()
 {
   fDetectorMessenger = new SCIBARDetectorMessenger(this);
 
-  fNumOfCladLayers = 0;
+  fNumOfCladLayers = 0;//0 default
  
-  fSurfaceRoughness = 1;
+    fSurfaceRoughness = 1;
  
   fMirrorToggle = true;
   fMirrorPolish = 1.;
@@ -88,7 +88,7 @@ SCIBARDetectorConstruction::SCIBARDetectorConstruction()
   fXYRatio = 1.0;
 
   fSCIBARfiberZ     = 0.65*m;
-  fSCIBARfiberRY  = 0.5*mm;
+    fSCIBARfiberRY  = 0.5*mm;//0.5*mm;
   fSCIBARfiberOrigin = 0.0;
  
   fMPPCShape = "Circle";
@@ -106,7 +106,7 @@ SCIBARDetectorConstruction::SCIBARDetectorConstruction()
   fBarThick	    = 4.91*mm;//thickness 1cm
   fHoleRadius       = 0.9*mm;
   fHoleLength       = fSCIBARfiberZ;//fBarLength;
-  fCoatingThickness = 0.25*mm;
+    fCoatingThickness = 0.25*mm;
   fCoatingRadius    = 1.875*mm;
 }
 
@@ -463,13 +463,35 @@ void SCIBARDetectorConstruction::ConstructFiber()
 
   // Boundary Surface Properties
   G4OpticalSurface* opSurface = NULL;
- 
+ //A surface concept is not needed if the perfectly smooth surface exists between two dielec materials
   if (fSurfaceRoughness < 1.)
      opSurface = new G4OpticalSurface("RoughSurface",          // Surface Name
                                       glisur,                  // SetModel
                                       ground,                  // SetFinish
                                       dielectric_dielectric,   // SetType
                                       fSurfaceRoughness);      // SetPolish
+    
+    /*opSurface = new G4OpticalSurface("RoughSurface",          // Surface Name
+                                     glisur,                  // SetModel
+                                     ground,                  // SetFinish
+                                     dielectric_metal,   // SetType
+                                     fSurfaceRoughness);      // SetPolish
+    //newadd02, setup property for opSurface
+    const int n_mylar_photons = 2;
+    double mylar_photons[n_mylar_photons]      = {2.0*eV, 3.6*eV};
+    // The reflectivity of Al for photos with wavelength <10um is ~90%
+    double mylar_reflectivity[n_mylar_photons] = {0.9, 0.9};
+    // Photoelectric efficiency
+    double mylar_efficiency[n_mylar_photons]   = {0.0, 0.0};
+    
+    G4MaterialPropertiesTable* mylar_MPT = new G4MaterialPropertiesTable();
+    
+    mylar_MPT->AddProperty("REFLECTIVITY",
+                           mylar_photons, mylar_reflectivity, n_mylar_photons);
+    mylar_MPT->AddProperty("EFFICIENCY",
+                           mylar_photons, mylar_efficiency, n_mylar_photons);
+    opSurface->SetMaterialPropertiesTable(mylar_MPT);*/
+    //
 
   G4LogicalVolume   *logicClad1, *logicClad2;
   G4VPhysicalVolume *physiClad1, *physiClad2;

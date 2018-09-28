@@ -39,7 +39,7 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-SCIBARStackingAction::SCIBARStackingAction() : fPhotonCounter(0) { }
+SCIBARStackingAction::SCIBARStackingAction(SCIBARHistoManager* histo) : fHistoManager(histo),fPhotonCounter(0) { }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -69,8 +69,9 @@ G4ClassificationOfNewTrack
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void SCIBARStackingAction::NewStage() {
-  // G4cout << "Number of optical photons produces in this event : "
-  //        << fPhotonCounter << G4endl;
+   G4cout << "Number of optical photons produces in this event : "
+          << fPhotonCounter << G4endl;
+    fHistoManager->FillHisto(4, fPhotonCounter);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

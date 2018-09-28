@@ -82,6 +82,9 @@ G4bool SCIBARPhotonDetSD::ProcessHits_constStep(const G4Step* aStep,
 //is generated manually when the photon hits the detector
 {
   if (aStep == NULL) return false;
+    //Retrieve the energy deposited from the step
+    G4double energyDeposit = aStep -> GetTotalEnergyDeposit();//newadd3
+    
   G4Track* theTrack = aStep->GetTrack();
 
   // Need to know if this is an optical photon
@@ -107,8 +110,10 @@ G4bool SCIBARPhotonDetSD::ProcessHits_constStep(const G4Step* aStep,
                                 GetTopTransform().TransformPoint(photonArrive);
 
   // Creating the hit and add it to the collection
-  fPhotonDetHitCollection->
-            insert(new SCIBARPhotonDetHit(photonExit, photonArrive, arrivalTime));
+  /*fPhotonDetHitCollection->
+            insert(new SCIBARPhotonDetHit(photonExit, photonArrive, arrivalTime));*/
+    fPhotonDetHitCollection->
+    insert(new SCIBARPhotonDetHit(photonExit, photonArrive, arrivalTime,energyDeposit));
 
   return true;
 }

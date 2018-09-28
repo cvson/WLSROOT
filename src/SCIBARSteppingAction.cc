@@ -39,6 +39,7 @@
 
 #include "SCIBARSteppingAction.hh"
 #include "SCIBARDetectorConstruction.hh"
+#include "SCIBAREventAction.hh"
 #include "SCIBARSteppingActionMessenger.hh"
 #include "SCIBARPhotonDetSD.hh"
 
@@ -66,25 +67,25 @@ G4int SCIBARSteppingAction::fMaxRndmSave = 10000;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-SCIBARSteppingAction::SCIBARSteppingAction(SCIBARDetectorConstruction* detector)
-  : fDetector(detector)
+SCIBARSteppingAction::SCIBARSteppingAction(SCIBARDetectorConstruction* detector,  SCIBAREventAction* event)
+: fDetector(detector),fEventAction(event)
 {
-  fSteppingMessenger = new SCIBARSteppingActionMessenger(this);
-
-  fCounterEnd = 0;
-  fCounterMid = 0;
-  fBounceLimit = 100000;
-
-  fOpProcess = NULL;
- 
-  ResetCounters();
+    fSteppingMessenger = new SCIBARSteppingActionMessenger(this);
+    
+    fCounterEnd = 0;
+    fCounterMid = 0;
+    fBounceLimit = 1000000;
+    
+    fOpProcess = NULL;
+    
+    ResetCounters();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 SCIBARSteppingAction::~SCIBARSteppingAction()
 {
-  delete fSteppingMessenger;
+    delete fSteppingMessenger;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -110,7 +111,7 @@ G4int SCIBARSteppingAction::GetNumberOfSCIBARBounces()   {return fCounterSCIBARB
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 G4int SCIBARSteppingAction::ResetSuccessCounter()     {
-      G4int temp = fCounterEnd; fCounterEnd = 0; return temp;
+    G4int temp = fCounterEnd; fCounterEnd = 0; return temp;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -119,25 +120,25 @@ inline void SCIBARSteppingAction::saveRandomStatus(G4String subDir)
 // save the random status into a sub-directory
 // Pre: subDir must be empty or ended with "/"
 {
- 
+    
     // don't save if the maximum amount has been reached
     if (SCIBARSteppingAction::fMaxRndmSave == 0) return;
-
+    
     G4RunManager* theRunManager = G4RunManager::GetRunManager();
     G4String randomNumberStatusDir = theRunManager->GetRandomNumberStoreDir();
- 
+    
     G4String fileIn  = randomNumberStatusDir + "currentEvent.rndm";
-
+    
     std::ostringstream os;
-
+    
     os << "run" << theRunManager->GetCurrentRun()->GetRunID() << "evt"
-       << theRunManager->GetCurrentEvent()->GetEventID() << ".rndm" << '\0';
-
+    << theRunManager->GetCurrentEvent()->GetEventID() << ".rndm" << '\0';
+    
     G4String fileOut = randomNumberStatusDir + subDir + os.str();
-
+    
     G4String copCmd = "/control/shell cp "+fileIn+" "+fileOut;
     G4UImanager::GetUIpointer()->ApplyCommand(copCmd);
-
+    
     SCIBARSteppingAction::fMaxRndmSave--;
 }
 
@@ -145,222 +146,293 @@ inline void SCIBARSteppingAction::saveRandomStatus(G4String subDir)
 
 void SCIBARSteppingAction::UserSteppingAction(const G4Step* theStep)
 {
-  G4Track* theTrack = theStep->GetTrack();
-  SCIBARUserTrackInformation* trackInformation
-      = (SCIBARUserTrackInformation*)theTrack->GetUserInformation();
+    G4StepPoint* thePrePoint  = theStep->GetPreStepPoint();
+    G4StepPoint* thePostPoint = theStep->GetPostStepPoint();
+    
+    G4VPhysicalVolume* thePrePV  = thePrePoint->GetPhysicalVolume();
+    G4VPhysicalVolume* thePostPV = thePostPoint->GetPhysicalVolume();
+    
+    G4String thePrePVname  = " ";
+    G4String thePostPVname = " ";
+    
+    if (thePostPV) {
+        thePrePVname  = thePrePV->GetName();
+        thePostPVname = thePostPV->GetName();
+    }
+    ////////newadd
+    // collect energy and track length step by step
+    G4double edep = 0;
+    
+    //should make for inside Scintillator only
+    G4double stepl = 0.;
+    if (theStep->GetTrack()->GetDefinition()->GetPDGCharge() != 0. && (thePrePVname=="Scintillator" || thePrePVname=="SideOfBar" || thePrePVname=="SideOfBarS" || thePrePVname=="Extrusion") ){
+        stepl = theStep->GetStepLength();
+        edep = theStep->GetTotalEnergyDeposit();
+       fEventAction->AddDep(edep,stepl);
+    }
+    ////////////
+    G4Track* theTrack = theStep->GetTrack();
+    SCIBARUserTrackInformation* trackInformation
+    = (SCIBARUserTrackInformation*)theTrack->GetUserInformation();
+    
+    //newadd4 for counting scintillator photon and cherenkov photon
+    //this loop over all step
+    G4RunManager* theRunManager = G4RunManager::GetRunManager();
+    G4String ParticleName = theTrack->GetDynamicParticle()->
+    GetParticleDefinition()->GetParticleName();
+    //if (ParticleName == "opticalphoton") return;
+    
+    const std::vector<const G4Track*>* secondaries =
+    theStep->GetSecondaryInCurrentStep();
+    G4double enscintth = 0;
+    G4double encherenth = 0;
+    if (ParticleName != "opticalphoton" && secondaries->size()>0) {
+        for(unsigned int i=0; i<secondaries->size(); ++i) {
+            if (secondaries->at(i)->GetParentID()>0) {
+                if(secondaries->at(i)->GetDynamicParticle()->GetParticleDefinition()
+                   == G4OpticalPhoton::OpticalPhotonDefinition()){
+                    if (secondaries->at(i)->GetCreatorProcess()->GetProcessName()
+                        == "Scintillation"){fScintillationCounter++;
+                        enscintth = secondaries->at(i)->GetKineticEnergy();
+                    }
+                    if (secondaries->at(i)->GetCreatorProcess()->GetProcessName()
+                        == "Cerenkov"){fCerenkovCounter++;
+                        encherenth = secondaries->at(i)->GetKineticEnergy();
+                    }
+                }
+            }
+        }
+         G4cout << "event "<<theRunManager->GetCurrentEvent()->GetEventID()<<" Number of scintillation photons produces "<< fScintillationCounter <<" cherenkov "<< fCerenkovCounter << G4endl;
+        fEventAction->AddNoPhotonType(fScintillationCounter, fCerenkovCounter);//newadd6
+        fEventAction->AddPhotonEnergy(enscintth, encherenth);//newadd6
+    }
+    //end newadd4
+    //fEventAction->AddPriTrackNophotonScint(fScintillationCounter);//newadd5
+    //fEventAction->AddPriTrackNophotonCheren(fCerenkovCounter);//newadd5
+    
 
-  G4StepPoint* thePrePoint  = theStep->GetPreStepPoint();
-  G4StepPoint* thePostPoint = theStep->GetPostStepPoint();
-
-  G4VPhysicalVolume* thePrePV  = thePrePoint->GetPhysicalVolume();
-  G4VPhysicalVolume* thePostPV = thePostPoint->GetPhysicalVolume();
-
-  G4String thePrePVname  = " ";
-  G4String thePostPVname = " ";
-
-  if (thePostPV) {
-     thePrePVname  = thePrePV->GetName();
-     thePostPVname = thePostPV->GetName();
-  }
-
-  //Recording data for start
-  if (theTrack->GetParentID()==0) {
-     //This is a primary track
-     if ( theTrack->GetCurrentStepNumber() == 1 ) {
-//        G4double x  = theTrack->GetVertexPosition().x();
-//        G4double y  = theTrack->GetVertexPosition().y();
-//        G4double z  = theTrack->GetVertexPosition().z();
-//        G4double pz = theTrack->GetVertexMomentumDirection().z();
-//        G4double fInitTheta = 
-//                         theTrack->GetVertexMomentumDirection().angle(ZHat);
-     }
-  }
-
-  // Retrieve the status of the photon
-  G4OpBoundaryProcessStatus theStatus = Undefined;
-
-  G4ProcessManager* OpManager =
-                      G4OpticalPhoton::OpticalPhoton()->GetProcessManager();
-
-  if (OpManager) {
-     G4int MAXofPostStepLoops =
-              OpManager->GetPostStepProcessVector()->entries();
-     G4ProcessVector* fPostStepDoItVector =
-              OpManager->GetPostStepProcessVector(typeDoIt);
-
-     for ( G4int i=0; i<MAXofPostStepLoops; i++) {
-         G4VProcess* fCurrentProcess = (*fPostStepDoItVector)[i];
-         fOpProcess = dynamic_cast<G4OpBoundaryProcess*>(fCurrentProcess);
-         if (fOpProcess) { theStatus = fOpProcess->GetStatus(); break;}
-     }
-  }
-
-  // Find the skewness of the ray at first change of boundary
-  if ( fInitGamma == -1 &&
-       (theStatus == TotalInternalReflection
-        || theStatus == FresnelReflection
-        || theStatus == FresnelRefraction)
+    
+    //Recording data for start
+    //to retrive primary track information
+    
+    if (theTrack->GetParentID()==0) {
+        //This is a primary track
+        if ( theTrack->GetCurrentStepNumber() == 1 ) {
+            //newadd
+            G4double xval  = theTrack->GetVertexPosition().x();
+            fEventAction->AddPriTrackx(xval);
+            G4double yval  = theTrack->GetVertexPosition().y();
+            fEventAction->AddPriTracky(yval);
+            G4double zval  = theTrack->GetVertexPosition().z();
+            fEventAction->AddPriTrackz(zval);
+            G4double pzval = theTrack->GetVertexMomentumDirection().z();
+            fEventAction->AddPriTrackpz(pzval);
+            G4double fInitThetaval =
+            theTrack->GetVertexMomentumDirection().angle(ZHat);
+            fEventAction->AddPriTracktheta(fInitThetaval);
+            
+        }
+    }
+    
+    // Retrieve the status of the photon
+    G4OpBoundaryProcessStatus theStatus = Undefined;
+    
+    //is this to look optical photon only?
+    G4ProcessManager* OpManager =
+    G4OpticalPhoton::OpticalPhoton()->GetProcessManager();
+    
+    if (OpManager) {
+        G4int MAXofPostStepLoops =
+        OpManager->GetPostStepProcessVector()->entries();
+        G4ProcessVector* fPostStepDoItVector =
+        OpManager->GetPostStepProcessVector(typeDoIt);
+        
+        for ( G4int i=0; i<MAXofPostStepLoops; i++) {
+            G4VProcess* fCurrentProcess = (*fPostStepDoItVector)[i];
+            fOpProcess = dynamic_cast<G4OpBoundaryProcess*>(fCurrentProcess);
+            if (fOpProcess) { theStatus = fOpProcess->GetStatus(); break;}
+        }
+    }
+    
+    // Find the skewness of the ray at first change of boundary
+    //turn off isStatus(InsideOfFiber) doesn't change the tracking
+    if ( fInitGamma == -1 &&
+        (theStatus == TotalInternalReflection
+         || theStatus == FresnelReflection
+         || theStatus == FresnelRefraction)
         && trackInformation->isStatus(InsideOfFiber) ) {
-
+        
         G4double px = theTrack->GetVertexMomentumDirection().x();
         G4double py = theTrack->GetVertexMomentumDirection().y();
         G4double x  = theTrack->GetPosition().x();
         G4double y  = theTrack->GetPosition().y();
-
+        
         fInitGamma = x * px + y * py;
-
-        fInitGamma = 
-                 fInitGamma / std::sqrt(px*px + py*py) / std::sqrt(x*x + y*y);
-
+        
+        fInitGamma =
+        fInitGamma / std::sqrt(px*px + py*py) / std::sqrt(x*x + y*y);
+        
         fInitGamma = std::acos(fInitGamma*rad);
-
+        
         if ( fInitGamma / deg > 90.0)  { fInitGamma = 180 * deg - fInitGamma;}
-  }
-  // Record Photons that missed the photon detector but escaped from readout
-  if ( !thePostPV && trackInformation->isStatus(EscapedFromReadOut) ) {
-//     UpdateHistogramSuccess(thePostPoint,theTrack);
-     ResetCounters();
- 
-     return;
-  }
-
-  // Assumed photons are originated at the fiber OR
-  // the fiber is the first material the photon hits
-  switch (theStatus) {
- 
-     // Exiting the fiber
-     case FresnelRefraction:
-     case SameMaterial:
-
-       G4bool isFiber;
-       isFiber = thePostPVname == "SCIBARFiber"
-                     || thePostPVname == "Clad1"
-                     || thePostPVname == "Clad2";
- 
-       if ( isFiber ) {
-
-           if (trackInformation->isStatus(OutsideOfFiber))
-                               trackInformation->AddStatusFlag(InsideOfFiber);
-
-       // Set the Exit flag when the photon refracted out of the fiber
-       } else if (trackInformation->isStatus(InsideOfFiber)) {
-
-           // EscapedFromReadOut if the z position is the same as fiber's end
-           if (theTrack->GetPosition().z() == fDetector->GetSCIBARFiberEnd())
-           {
-              trackInformation->AddStatusFlag(EscapedFromReadOut);
-              fCounterEnd++;
-           }
-           else // Escaped from side
-           {
-              trackInformation->AddStatusFlag(EscapedFromSide);
-              trackInformation->SetExitPosition(theTrack->GetPosition());
-
-//              UpdateHistogramEscape(thePostPoint,theTrack);
-
-              fCounterMid++;
-              ResetCounters();
-           }
-
-           trackInformation->AddStatusFlag(OutsideOfFiber);
-           trackInformation->SetExitPosition(theTrack->GetPosition());
-
-       }
-
-       return;
- 
-     // Internal Reflections
-     case TotalInternalReflection:
- 
-       // Kill the track if it's number of bounces exceeded the limit
-       if (fBounceLimit > 0 && fCounterBounce >= fBounceLimit)
-       {
-          theTrack->SetTrackStatus(fStopAndKill);
-          trackInformation->AddStatusFlag(murderee);
-          ResetCounters();
-          G4cout << "\n Bounce Limit Exceeded" << G4endl;
-          return;
-       }
- 
-     case FresnelReflection:
-
-       fCounterBounce++;
- 
-       if ( thePrePVname == "SCIBARFiber") fCounterSCIBARBounce++;
-
-       else if ( thePrePVname == "Clad1") fCounterClad1Bounce++;
-
-       else if ( thePrePVname == "Clad2") fCounterClad2Bounce++;
- 
-       // Determine if the photon has reflected off the read-out end
-       if (theTrack->GetPosition().z() == fDetector->GetSCIBARFiberEnd())
-       {
-          if (!trackInformation->isStatus(ReflectedAtReadOut) &&
-              trackInformation->isStatus(InsideOfFiber))
-          {
-             trackInformation->AddStatusFlag(ReflectedAtReadOut);
-
-             if (fDetector->IsPerfectFiber() &&
-                 theStatus == TotalInternalReflection)
-             {
+    }
+    // Record Photons that missed the photon detector but escaped from readout
+    if ( !thePostPV && trackInformation->isStatus(EscapedFromReadOut) ) {
+        //     UpdateHistogramSuccess(thePostPoint,theTrack);
+        ResetCounters();
+        
+        return;
+    }
+    
+    // Assumed photons are originated at the fiber OR
+    // the fiber is the first material the photon hits
+    switch (theStatus) {
+            //boundary for photons from scintillation
+            
+            // Exiting the fiber
+        case FresnelRefraction:
+        case SameMaterial:
+            
+            G4bool isFiber;
+            /*isFiber = thePostPVname == "SCIBARFiber"
+            || thePostPVname == "Clad1"
+            || thePostPVname == "Clad2" ||thePostPVname == "Hole" || thePostPVname =="Scintillator" ;*/
+            
+            isFiber = thePostPVname == "SCIBARFiber"
+            || thePostPVname == "Clad1"
+            || thePostPVname == "Clad2" /*||thePostPVname == "Hole" || thePostPVname =="Scintillator" || thePostPVname =="SideOfBar" || thePostPVname =="SideOfBarS" || thePostPVname =="Extrusion"*/;
+            if ( isFiber ) {
+                
+                if (trackInformation->isStatus(OutsideOfFiber))
+                    trackInformation->AddStatusFlag(InsideOfFiber);
+                
+                // Set the Exit flag when the photon refracted out of the fiber
+            } else if (trackInformation->isStatus(InsideOfFiber)) {
+                
+                // EscapedFromReadOut if the z position is the same as fiber's end
+                if (theTrack->GetPosition().z() == fDetector->GetSCIBARFiberEnd())
+                {
+                    trackInformation->AddStatusFlag(EscapedFromReadOut);
+                    fCounterEnd++;
+                }
+                else // Escaped from side
+                {
+                    trackInformation->AddStatusFlag(EscapedFromSide);
+                    trackInformation->SetExitPosition(theTrack->GetPosition());
+                    
+                    //              UpdateHistogramEscape(thePostPoint,theTrack);
+                    
+                    fCounterMid++;
+                    ResetCounters();
+                }
+                
+                trackInformation->AddStatusFlag(OutsideOfFiber);
+                trackInformation->SetExitPosition(theTrack->GetPosition());
+                
+            }
+            
+            return;
+            
+            // Internal Reflections
+        case TotalInternalReflection:
+            
+            // Kill the track if it's number of bounces exceeded the limit
+            if (fBounceLimit > 0 && fCounterBounce >= fBounceLimit)
+            {
                 theTrack->SetTrackStatus(fStopAndKill);
                 trackInformation->AddStatusFlag(murderee);
-//                UpdateHistogramReflect(thePostPoint,theTrack);
-                     ResetCounters();
+                ResetCounters();
+                G4cout << "\n Bounce Limit Exceeded" << G4endl;
                 return;
-             }
-          }
-       }
-       return;
-
-     // Reflection of the mirror
-     case LambertianReflection:
-     case LobeReflection:
-     case SpikeReflection:
-
-       // Check if it hits the mirror
-       if ( thePostPVname == "Mirror" )
-          trackInformation->AddStatusFlag(ReflectedAtMirror);
- 
-       return;
-
-     // Detected by a detector
-     case Detection:
-
-       // Check if the photon hits the detector and process the hit if it does
-       if ( thePostPVname == "PhotonDet" ) {
-
-          G4SDManager* SDman = G4SDManager::GetSDMpointer();
-          G4String SDname="SCIBAR/PhotonDet";
-          SCIBARPhotonDetSD* mppcSD =
-                        (SCIBARPhotonDetSD*)SDman->FindSensitiveDetector(SDname);
-
-          if (mppcSD) mppcSD->ProcessHits_constStep(theStep,NULL);
-
-          // Record Photons that escaped at the end
-//          if (trackInformation->isStatus(EscapedFromReadOut))
-//                              UpdateHistogramSuccess(thePostPoint,theTrack);
-
-          // Stop Tracking when it hits the detector's surface
-          ResetCounters();
-          theTrack->SetTrackStatus(fStopAndKill);
-
-          return;
-       }
-
-       break;
-
-     default: break;
-
-  }
- 
-  // Check for absorbed photons
-  if (theTrack->GetTrackStatus() != fAlive  &&
-      trackInformation->isStatus(InsideOfFiber))
-  {
-//     UpdateHistogramAbsorb(thePostPoint,theTrack);
-     ResetCounters();
-     return;
-  }
+            }
+            
+        case FresnelReflection:
+            
+            fCounterBounce++;
+            
+            if ( thePrePVname == "SCIBARFiber") fCounterSCIBARBounce++;
+            
+            else if ( thePrePVname == "Clad1") fCounterClad1Bounce++;
+            
+            else if ( thePrePVname == "Clad2") fCounterClad2Bounce++;
+            
+            // Determine if the photon has reflected off the read-out end
+            if (theTrack->GetPosition().z() == fDetector->GetSCIBARFiberEnd())
+            {
+                if (!trackInformation->isStatus(ReflectedAtReadOut) &&
+                    trackInformation->isStatus(InsideOfFiber))
+                {
+                    trackInformation->AddStatusFlag(ReflectedAtReadOut);
+                    
+                    if (fDetector->IsPerfectFiber() &&
+                        theStatus == TotalInternalReflection)
+                    {
+                        theTrack->SetTrackStatus(fStopAndKill);
+                        trackInformation->AddStatusFlag(murderee);
+                        //                UpdateHistogramReflect(thePostPoint,theTrack);
+                        ResetCounters();
+                        return;
+                    }
+                }
+            }
+            return;
+            
+            // Reflection of the mirror
+        case LambertianReflection:
+        case LobeReflection:
+        case SpikeReflection:
+            
+            // Check if it hits the mirror
+            if ( thePostPVname == "Mirror" )
+                trackInformation->AddStatusFlag(ReflectedAtMirror);
+            
+            return;
+            
+            // Detected by a detector
+        case Detection:
+            
+            // Check if the photon hits the detector and process the hit if it does
+            if ( thePostPVname == "PhotonDet" ) {
+                
+                G4SDManager* SDman = G4SDManager::GetSDMpointer();
+                G4String SDname="SCIBAR/PhotonDet";
+                SCIBARPhotonDetSD* mppcSD =
+                (SCIBARPhotonDetSD*)SDman->FindSensitiveDetector(SDname);
+                
+                if (mppcSD) mppcSD->ProcessHits_constStep(theStep,NULL);
+                
+                // Record Photons that escaped at the end
+                //          if (trackInformation->isStatus(EscapedFromReadOut))
+                //                              UpdateHistogramSuccess(thePostPoint,theTrack);
+                
+                // Stop Tracking when it hits the detector's surface
+                ResetCounters();
+                theTrack->SetTrackStatus(fStopAndKill);
+                
+                return;
+            }
+            
+            break;
+            
+        default: break;
+            
+    }//end of switch status
+    //G4cout << "event "<<theRunManager->GetCurrentEvent()->GetEventID()<<" Number of photons pass2end "<< fCounterEnd <<" fail2end "<< fCounterMid << G4endl;
+    //add information of photon pass or fail to reach sensitive detector
+    //fEventAction->AddPriTrackNophotonpass2end(fCounterEnd);//newadd2
+    //fEventAction->AddPriTrackNophotonfail2end(fCounterMid);//newadd2
+    if (theStep->GetTrack()->GetDefinition()->GetPDGCharge() != 0.){
+        fEventAction->AddNoPhotonPass2end(fCounterEnd);//newadd6
+        fEventAction->AddNoPhotonFail2end(fCounterMid);//newadd6
+    }
+    // Check for absorbed photons
+    if (theTrack->GetTrackStatus() != fAlive  &&
+        trackInformation->isStatus(InsideOfFiber))
+    {
+        //     UpdateHistogramAbsorb(thePostPoint,theTrack);
+        ResetCounters();
+        return;
+    }
+    
  
 }

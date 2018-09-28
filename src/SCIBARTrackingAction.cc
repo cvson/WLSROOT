@@ -64,6 +64,8 @@ void SCIBARTrackingAction::PreUserTrackingAction(const G4Track* aTrack)
 
   if (PVName == "SCIBARFiber" || PVName == "Clad1" || PVName == "Clad2")
      trackInformation->AddStatusFlag(InsideOfFiber);
+    
+    if (PVName=="Scintillator" || PVName=="SideOfBar" || PVName=="SideOfBarS" || PVName=="CrnrOfBar" || PVName=="Hole") trackInformation->AddStatusFlag(OutsideOfFiber);//newadd01
 
   fpTrackingManager->SetUserTrackInformation(trackInformation);
 }
