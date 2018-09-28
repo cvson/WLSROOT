@@ -2,6 +2,37 @@
          Geant4 - an Object-Oriented Toolkit for Simulation in HEP
          =========================================================
 
+NOTE: THIS is adaption for WLS example to track optical photon produced in the scintillator, capture by the optical fiber and guide to a senstivie detector. Bellow is few notes for adaption
+- Update: Scintillation absoprtion length in SCIBARMaterials.cc
+- Modify the size of scintillation and fiber
+- Colorize the components
+- Store information in 1D histogram and ntuples using SCIBARHistoManager class
+	+ 1D histogram:
+		("Edep","Edep in scintillator (MeV)", 200, 0., 50*MeV);
+  		("Ldep","trackL in scintillator (mm)", 200, 0., 10*cm);
+  		("dEdx","dE/dx (MeV/cm)", 200, 0., 10*MeV/cm);
+    		("nhit","Number of hits", 200, 0., 1000);
+    		("nopticalphoton","Number of Optical Photon", 200, 0., 50000);
+    		("Edephit","Edep in scintillator from hits(MeV)", 200, 0., 10*MeV); 
+	+ Ntuple: ELdep
+		Edep --> Edep in scintillator (MeV)
+		Ldep --> trackL in scintillator (mm)
+	+ Ntuple: PrimTrack
+		xpos: x position of primary track
+		ypos: y position of primary track
+		zpos: z position of primary track
+		pz: momentum in in z direction of primary track
+		theta: angle of primary track to the z-axis
+		nphotonpass2end: number of photons reach to sensitive detector
+		nphotonfail2end: number of photons fail to reach sensitive detector
+		nphotonscintillation: number of scintillation photon produced when charge particle pass through scintillator
+		nphotoncherenkov: number of cherenkov photon produced when charge particle pass through 
+		totalenscintillation: total energy of scintillation photon
+		totalencherenkov: total energy of cherenkov photon
+ 
+
+
+
                                    WLS
                                 ----------
 
